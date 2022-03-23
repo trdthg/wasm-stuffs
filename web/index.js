@@ -25,15 +25,32 @@ canvas.width = (CELL_SIZE + 1) * width + 1;
 
 const ctx = canvas.getContext('2d');
 
+let animationId = null;
+const playPauseButton = document.getElementById("play-pause");
+
+playPauseButton.addEventListener("click", () => {
+  if (animationId === null) {
+    playPauseButton.textContent = "暂停";
+    renderLoop();
+  } else {
+    playPauseButton.textContent = "继续";
+    cancelAnimationFrame(animationId);
+    animationId = null;
+  }
+});
+
 var fps = 30;
 var interval = 1000/fps;
+let last = new Date().getTime();
 const renderLoop = () => {
-  setTimeout(function() {
+  animationId = requestAnimationFrame(renderLoop);
+  let now = new Date().getTime();
+  let elapsed = now - last;
+  if (elapsed > interval) {
+    last = now - (elapsed % interval);
     universe.tick();
-    // drawGrid();
     drawCells();
-    requestAnimationFrame(renderLoop);
-  }, interval)
+  }
 };
 
 // 绘制网格
