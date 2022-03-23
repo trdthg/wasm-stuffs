@@ -1,7 +1,9 @@
+mod cells;
 mod utils;
 
 use std::fmt::Display;
 
+use fixedbitset::FixedBitSet;
 use wasm_bindgen::prelude::*;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -28,45 +30,64 @@ pub enum Cell {
     Alive = 1,
 }
 
+// #[wasm_bindgen]
+// pub struct Universe {
+//     width: u32,
+//     height: u32,
+//     cells: Vec<Cell>,
+// }
+
 #[wasm_bindgen]
 pub struct Universe {
     width: u32,
     height: u32,
-    cells: Vec<Cell>,
+    cells: FixedBitSet,
 }
-
 #[wasm_bindgen]
 impl Universe {
     /// 创建一个新的宇宙
     ///
     /// 现在初始存活状态是固定的
     pub fn new(width: u32, height: u32) -> Self {
+        let size = width * height;
+        let mut cells = FixedBitSet::with_capacity(size as usize);
+        for i in 0..size {
+            cells.set(
+                i as usize,
+                if js_sys::Math::random() < 0.5 {
+                    true
+                } else {
+                    false
+                },
+            )
+        }
+        // let cells = (0..width * height)
+        //     .map(|_| {
+        // if js_sys::Math::random() < 0.5 {
+        //     Cell::Alive
+        // } else {
+        //     Cell::Dead
+        // }
+        //         // if i % 2 == 0 || i % 7 == 0 {
+        //         //     Cell::Alive
+        //         // } else {
+        //         //     Cell::Dead
+        //         // }
+        //     })
+        //     .collect();
         Self {
             width,
             height,
-            cells: (0..width * height)
-                .map(|_| {
-                    if js_sys::Math::random() < 0.5 {
-                        Cell::Alive
-                    } else {
-                        Cell::Dead
-                    }
-                    // if i % 2 == 0 || i % 7 == 0 {
-                    //     Cell::Alive
-                    // } else {
-                    //     Cell::Dead
-                    // }
-                })
-                .collect(),
+            cells,
         }
     }
 
     /// 把宇宙渲染成字符串
     ///
     /// 通过实现Display方法实现
-    pub fn render(&self) -> String {
-        self.to_string()
-    }
+    // pub fn render(&self) -> String {
+    //     self.to_string()
+    // }
 
     /// 计算线型存储的实际索引
     ///
@@ -99,18 +120,29 @@ impl Universe {
     ///
     /// 主要变换逻辑都在这里了
     pub fn tick(&mut self) {
-        let mut next = self.cells.clone();
+        // let mut next = self.cells.clone();
+        let mut next = FixedBitSet::with_capacity(self.width as usize * self.height as usize);
         for row in 0..self.height {
             for col in 0..self.width {
                 let idx = self.get_index(row, col);
                 let cell = self.cells[idx];
-                next[idx] = match (cell, self.count_live_neighbor(row, col)) {
-                    (Cell::Alive, x) if x <= 1 => Cell::Dead,
-                    (Cell::Alive, 2 | 3) => Cell::Alive,
-                    (Cell::Alive, x) if x >= 4 => Cell::Dead,
-                    (Cell::Dead, 3) => Cell::Alive,
-                    (cell, _) => cell,
-                };
+                // next[idx] = match (cell, self.count_live_neighbor(row, col)) {
+                //     (Cell::Alive, x) if x <= 1 => Cell::Dead,
+                //     (Cell::Alive, 2 | 3) => Cell::Alive,
+                //     (Cell::Alive, x) if x >= 4 => Cell::Dead,
+                //     (Cell::Dead, 3) => Cell::Alive,
+                //     (cell, _) => cell,
+                // };
+                next.set(
+                    idx,
+                    match (cell, self.count_live_neighbor(row, col)) {
+                        (true, x) if x <= 1 => false,
+                        (true, 2 | 3) => true,
+                        (true, x) if x >= 4 => false,
+                        (false, 3) => true,
+                        (cell, _) => cell,
+                    },
+                );
             }
         }
         self.cells = next
@@ -128,23 +160,27 @@ impl Universe {
     pub fn height(&self) -> u32 {
         self.height
     }
-    pub fn cells(&self) -> *const Cell {
-        self.cells.as_ptr()
+    // pub fn cells(&self) -> *const Cell {
+    //     self.cells.as_ptr()
+    // }
+    pub fn cells(&self) -> *const u32 {
+        self.cells.as_slice().as_ptr()
     }
 }
 
-impl Display for Universe {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for line in self.cells.chunks(self.width as usize) {
-            for &cell in line {
-                let symbol = if cell == Cell::Alive { '◼' } else { '◻' };
-                write!(f, "{}", symbol)?;
-            }
-            write!(f, "\n")?;
-        }
-        Ok(())
-    }
-}
+// impl Display for Universe {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         // for line in self.cells.chunks(self.width as usize) {
+//         for line in self.cells.chunks(self.width as usize) {
+//             for &cell in line {
+//                 let symbol = if cell == Cell::Alive { '◼' } else { '◻' };
+//                 write!(f, "{}", symbol)?;
+//             }
+//             write!(f, "\n")?;
+//         }
+//         Ok(())
+//     }
+// }
 
 #[cfg(test)]
 mod test {
