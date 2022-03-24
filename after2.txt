@@ -6,7 +6,7 @@ test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; fini
 
 
 running 1 test
-test universe_ticks ... bench:      11,564 ns/iter (+/- 240)
+test universe_ticks ... bench:      11,597 ns/iter (+/- 265)
 
-test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured; 0 filtered out; finished in 0.34s
+test result: ok. 0 passed; 0 failed; 0 ignored; 1 measured; 0 filtered out; finished in 0.27s
 

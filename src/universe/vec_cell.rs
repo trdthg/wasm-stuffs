@@ -26,6 +26,7 @@ pub struct Universe {
     width: u32,
     height: u32,
     cells: Vec<Cell>,
+    next_cells: Vec<Cell>,
 }
 // #[wasm_bindgen]
 impl Universe {
@@ -33,21 +34,26 @@ impl Universe {
     ///
     /// 现在初始存活状态是固定的
     pub fn new(width: u32, height: u32) -> Self {
-        let size = width * height;
-        let cells = (0..size)
-            .map(|_| {
+        let size = (width * height) as usize;
+        let cells: Vec<Cell> = (0..size)
+            .map(|i| {
                 // if js_sys::Math::random() < 0.5 {
                 //     Cell::Alive
                 // } else {
                 //     Cell::Dead
                 // }
-                Cell::Dead
+                if i % 2 == 0 || i % 7 == 0 {
+                    Cell::Alive
+                } else {
+                    Cell::Dead
+                }
             })
             .collect();
         Self {
             width,
             height,
-            cells,
+            cells: cells.clone(),
+            next_cells: cells,
         }
     }
 
@@ -88,7 +94,7 @@ impl Universe {
     /// 计算一个点存活的邻居数量，邻居是周围8个点
     ///
     /// 上边界和下边界互相连通，因此没有使用-1，实现了循环，
-    fn count_live_neighbor(&self, row: u32, col: u32) -> u8 {
+    fn count_alive_neighbor(&self, row: u32, col: u32) -> u8 {
         let mut count = 0;
         // for delta_row in [self.height - 1, 0, 1] {
         //     for delta_col in [self.width - 1, 0, 1] {
@@ -127,18 +133,18 @@ impl Universe {
     /// 主要变换逻辑都在这里了
     pub fn tick(&mut self) {
         // 使用drop实现计时
-        let _timer = Timer::new("Universe::tick");
-        let mut next = {
-            let _timer = Timer::new("step1: allocate new cells");
-            self.cells.clone()
-        };
+        // let _timer = Timer::new("Universe::tick");
+        // let mut next = {
+        //     // let _timer = Timer::new("step1: allocate new cells");
+        //     self.cells.clone()
+        // };
         {
             let _timer = Timer::new("step2: calculate cells");
             for row in 0..self.height {
                 for col in 0..self.width {
                     let idx = self.get_index(row, col);
                     let cell = self.cells[idx];
-                    next[idx] = match (cell, self.count_live_neighbor(row, col)) {
+                    self.next_cells[idx] = match (cell, self.count_alive_neighbor(row, col)) {
                         (Cell::Alive, x) if x <= 1 => Cell::Dead,
                         (Cell::Alive, 2 | 3) => Cell::Alive,
                         (Cell::Alive, x) if x >= 4 => Cell::Dead,
@@ -148,8 +154,10 @@ impl Universe {
                 }
             }
         }
-        let _timer = Timer::new("step3: drop old cells");
-        self.cells = next
+        // self.cells = next.clone();
+        // std::mem::swap(&mut self.cells, &mut self.next_cells);
+        std::mem::swap(&mut self.cells, &mut self.next_cells);
+        // self.cells = self.next_cells.clone()
     }
 }
 

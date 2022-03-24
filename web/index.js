@@ -166,7 +166,7 @@ const drawCells = () => {
   // const cells = new Uint8Array(memory.buffer, cellsPtr, width*height / 8);
   ctx.beginPath();
 
-  // 优化性能，ctx.fillStyle赋值这句话消耗的时间和fill几乎一样，占据了大量时间
+  // 优化性能，ctx.fillStyle赋值这句话消耗的时间和fill几乎一样，每一轮都会运行n次，优化后只运行2次
   // 这里优化之后，ctx.fillStyle几乎不再消耗性能
   // Alive cells.
   ctx.fillStyle = ALIVE_COLOR;
