@@ -1,0 +1,22 @@
+
+running 1 test
+test universe::vec_cell::test::cell_size ... ignored
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+test universe_ticks ... FAILED
+
+failures:
+
+---- universe_ticks stdout ----
+thread 'main' panicked at 'cannot call wasm-bindgen imported functions on non-wasm targets', /home/trdthg/.cargo/registry/src/github.com-1ecc6299db9ec823/web-sys-0.3.56/src/features/gen_console.rs:5:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    universe_ticks
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

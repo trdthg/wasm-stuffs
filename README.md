@@ -22,6 +22,39 @@ wasm目前无法直接访问js的GC Heap(这点可能会改变, wasm提案正尝
 
 一些大型的，长期存在的数据结构应该将指针暴露给js
 
+### 优化方向
+1. consle.EndTime计算函数执行时间
+
+2. 结合浏览器性能分析工具，观察函数调用栈的时间占比
+
+3. bench
+准备项目
+- 切换到`nightly`版本, 项目根目录下增加`toolchain`文件，写入`nightly`即可
+- 注释掉所有的`#[wasm-bindgen]`
+- 注释掉所有的`web-sys`调用
+
+开始测试，并将结果导出到before.txt
+```shell
+cargo bench | tee before.txt
+```
+从before.txt中获取运行结果，找到对应的二进制文件， 使用perf再次运行这个二进制文件
+```
+perf record -g target/release/deps/bench-2e4b55af5ebabae8 --bench
+```
+查看结果
+```
+perf report
+```
+![](https://trdthg-img-for-md-1306147581.cos.ap-beijing.myqcloud.com/img/202203241137609.png)
+按下`a`查看汇编代码的时间统计结果
+![](https://trdthg-img-for-md-1306147581.cos.ap-beijing.myqcloud.com/img/202203241138801.png)
+竟然相差了十几倍
+```
+before: test universe_ticks ... bench:     215,952 ns/iter (+/- 7,814)
+after : test universe_ticks ... bench:      18,912 ns/iter (+/- 5,025)
+```
+
+
 ## 🎉 展示
 康为生命游戏
 ![图片](https://trdthg-img-for-md-1306147581.cos.ap-beijing.myqcloud.com/img/202203231913525.png)

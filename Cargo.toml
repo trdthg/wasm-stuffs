@@ -6,7 +6,10 @@ edition = "2021"
 
 [lib]
 # 用于生成wasm库
-crate-type = ["cdylib", "rlib"]
+crate-type = [
+    "cdylib",
+    "rlib"
+]
 
 [features]
 default = ["console_error_panic_hook"]
