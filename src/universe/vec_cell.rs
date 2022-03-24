@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
-// use wasm_bindgen::prelude::*;
+use wasm_bindgen::prelude::*;
 
 use crate::profile::Timer;
 
-// #[wasm_bindgen]
+#[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)] // 单元只占据一个byte，使用默认的布局会占用4个byte // 好像现在默认也是一个byte
 pub enum Cell {
@@ -21,14 +21,14 @@ impl Cell {
     }
 }
 
-// #[wasm_bindgen]
+#[wasm_bindgen]
 pub struct Universe {
     width: u32,
     height: u32,
     cells: Vec<Cell>,
     next_cells: Vec<Cell>,
 }
-// #[wasm_bindgen]
+#[wasm_bindgen]
 impl Universe {
     /// 创建一个新的宇宙
     ///
@@ -108,14 +108,11 @@ impl Universe {
         //         count += self.cells[idx] as u8;
         //     }
         // }
+        // count
         let above = if row == 0 { self.height - 1 } else { row - 1 };
-        let below = if row == self.height - 1 {
-            0
-        } else {
-            self.height - 1
-        };
-        let left = if row == self.width { 0 } else { self.width - 1 };
-        let right = if col == 0 { self.width - 1 } else { col - 1 };
+        let below = if row == self.height - 1 { 0 } else { row + 1 };
+        let left = if col == 0 { self.width - 1 } else { col - 1 };
+        let right = if col == self.width - 1 { 0 } else { col + 1 };
         count += self.cells[self.get_index(above, left)] as u8;
         count += self.cells[self.get_index(above, col)] as u8;
         count += self.cells[self.get_index(above, right)] as u8;
@@ -133,11 +130,12 @@ impl Universe {
     /// 主要变换逻辑都在这里了
     pub fn tick(&mut self) {
         // 使用drop实现计时
-        // let _timer = Timer::new("Universe::tick");
+        let _timer = Timer::new("Universe::tick");
         // let mut next = {
         //     // let _timer = Timer::new("step1: allocate new cells");
         //     self.cells.clone()
         // };
+        // let mut dirtys = Vec::new();
         {
             let _timer = Timer::new("step2: calculate cells");
             for row in 0..self.height {
@@ -145,10 +143,19 @@ impl Universe {
                     let idx = self.get_index(row, col);
                     let cell = self.cells[idx];
                     self.next_cells[idx] = match (cell, self.count_alive_neighbor(row, col)) {
-                        (Cell::Alive, x) if x <= 1 => Cell::Dead,
+                        (Cell::Alive, x) if x <= 1 => {
+                            // dirtys.push(idx);
+                            Cell::Dead
+                        }
                         (Cell::Alive, 2 | 3) => Cell::Alive,
-                        (Cell::Alive, x) if x >= 4 => Cell::Dead,
-                        (Cell::Dead, 3) => Cell::Alive,
+                        (Cell::Alive, x) if x >= 4 => {
+                            // dirtys.push(idx);
+                            Cell::Dead
+                        }
+                        (Cell::Dead, 3) => {
+                            // dirtys.push(idx);
+                            Cell::Alive
+                        }
                         (cell, _) => cell,
                     };
                 }
@@ -156,6 +163,7 @@ impl Universe {
         }
         // self.cells = next.clone();
         // std::mem::swap(&mut self.cells, &mut self.next_cells);
+        let _timer = Timer::new("step2: exchange cells and next_cells");
         std::mem::swap(&mut self.cells, &mut self.next_cells);
         // self.cells = self.next_cells.clone()
     }
@@ -164,7 +172,7 @@ impl Universe {
 /// 优化
 ///
 /// 把cells的指针和长宽暴露给js, js直接读取wasm内存进行渲染
-// #[wasm_bindgen]
+#[wasm_bindgen]
 impl Universe {
     pub fn width(&self) -> u32 {
         self.width

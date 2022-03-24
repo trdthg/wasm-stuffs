@@ -53,6 +53,8 @@ perf report
 before: test universe_ticks ... bench:     215,952 ns/iter (+/- 7,814)
 after : test universe_ticks ... bench:      18,912 ns/iter (+/- 5,025)
 ```
+从10ms降低到3ms
+![](https://trdthg-img-for-md-1306147581.cos.ap-beijing.myqcloud.com/img/202203241453849.png)
 
 
 ## 🎉 展示
