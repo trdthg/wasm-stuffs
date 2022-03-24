@@ -27,6 +27,8 @@ pub struct Universe {
     height: u32,
     cells: Vec<Cell>,
     next_cells: Vec<Cell>,
+    dirty_num: u32,
+    dirty_cells: Vec<u32>,
 }
 #[wasm_bindgen]
 impl Universe {
@@ -54,6 +56,8 @@ impl Universe {
             height,
             cells: cells.clone(),
             next_cells: cells,
+            dirty_num: 0,
+            dirty_cells: Vec::new(),
         }
     }
 
@@ -136,6 +140,8 @@ impl Universe {
         //     self.cells.clone()
         // };
         // let mut dirtys = Vec::new();
+        self.dirty_num = 0;
+        self.dirty_cells.clear();
         {
             let _timer = Timer::new("step2: calculate cells");
             for row in 0..self.height {
@@ -144,16 +150,22 @@ impl Universe {
                     let cell = self.cells[idx];
                     self.next_cells[idx] = match (cell, self.count_alive_neighbor(row, col)) {
                         (Cell::Alive, x) if x <= 1 => {
-                            // dirtys.push(idx);
+                            self.dirty_cells.push(row);
+                            self.dirty_cells.push(col);
+                            self.dirty_num += 1;
                             Cell::Dead
                         }
                         (Cell::Alive, 2 | 3) => Cell::Alive,
                         (Cell::Alive, x) if x >= 4 => {
-                            // dirtys.push(idx);
+                            self.dirty_cells.push(row);
+                            self.dirty_cells.push(col);
+                            self.dirty_num += 1;
                             Cell::Dead
                         }
                         (Cell::Dead, 3) => {
-                            // dirtys.push(idx);
+                            self.dirty_cells.push(row);
+                            self.dirty_cells.push(col);
+                            self.dirty_num += 1;
                             Cell::Alive
                         }
                         (cell, _) => cell,
@@ -182,6 +194,12 @@ impl Universe {
     }
     pub fn cells(&self) -> *const Cell {
         self.cells.as_ptr()
+    }
+    pub fn dirty_cells(&self) -> *const u32 {
+        self.dirty_cells.as_ptr()
+    }
+    pub fn dirty_num(&self) -> u32 {
+        self.dirty_num
     }
 }
 

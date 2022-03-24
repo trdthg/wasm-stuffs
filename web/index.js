@@ -19,11 +19,16 @@ const width = universe.width();
 const height = universe.height();
 
 // 边框也占据一个像素
+/**@type {HTMLCanvasElement} */
 const canvas = document.getElementById('canvas');
 canvas.height = (CELL_SIZE + 1) * height + 1;
 canvas.width = (CELL_SIZE + 1) * width + 1;
 
-const ctx = canvas.getContext('2d');
+// /**@type {WebGL2RenderingContext} */
+// const gl = canvas.getContext('webgl');
+
+/**@type {CanvasRenderingContext2D} */
+const ctx = canvas.getContext("2d");
 
 let animationId = null;
 const playPauseButton = document.getElementById("play-pause");
@@ -161,49 +166,83 @@ const getIndex = (row, col) => {
 // };
 
 const drawCells = () => {
+  // 再次优化，只渲染改变过的Cell
+  const dirtyNum = universe.dirty_num() * 2;
+  const dirtyCells = new Uint32Array(memory.buffer, universe.dirty_cells(), dirtyNum * 2)
   const cellsPtr = universe.cells();
   const cells = new Uint8Array(memory.buffer, cellsPtr, width*height);
   // const cells = new Uint8Array(memory.buffer, cellsPtr, width*height / 8);
   ctx.beginPath();
 
-  // 优化性能，ctx.fillStyle赋值这句话消耗的时间和fill几乎一样，每一轮都会运行n次，优化后只运行2次
-  // 这里优化之后，ctx.fillStyle几乎不再消耗性能
-  // Alive cells.
   ctx.fillStyle = ALIVE_COLOR;
-  for (let row = 0; row < height; row++) {
-    for (let col = 0; col < width; col++) {
-      const idx = getIndex(row, col);
+  for (let i = 0; i < dirtyNum; i++) {
+    const row = dirtyCells[i*2];
+    const col = dirtyCells[i*2+1]
+    const idx = getIndex(row, col);
       if (cells[idx] !== wasm.Cell.Alive) {
         continue;
       }
-
       ctx.fillRect(
         col * (CELL_SIZE + 1) + 1,
         row * (CELL_SIZE + 1) + 1,
         CELL_SIZE,
         CELL_SIZE
       );
-    }
   }
-
-
   ctx.fillStyle = DEAD_COLOR;
-  for (let row = 0; row < height; row ++) {
-    for (let col = 0; col < height; col ++) {
-      const idx = getIndex(row, col);
-      // console.log(row, col, idx, bitIsSet(idx, cells));
-      // ctx.fillStyle = cells[idx] === wasm.Cell.Alive ? ALIVE_COLOR : DEAD_COLOR;
-      // ctx.fillStyle = bitIsSet(idx, cells) === true ? ALIVE_COLOR : DEAD_COLOR;
+  for (let i = 0; i < dirtyNum; i++) {
+    const row = dirtyCells[i*2];
+    const col = dirtyCells[i*2+1]
+    const idx = getIndex(row, col);
       if (cells[idx] !== wasm.Cell.Dead) {
         continue;
       }
       ctx.fillRect(
-          col * (CELL_SIZE + 1)+1,
-          row * (CELL_SIZE + 1)+1,
-          CELL_SIZE,
-          CELL_SIZE);
-    }
+        col * (CELL_SIZE + 1) + 1,
+        row * (CELL_SIZE + 1) + 1,
+        CELL_SIZE,
+        CELL_SIZE
+      );
   }
+
+  // 优化性能，ctx.fillStyle赋值这句话消耗的时间和fill几乎一样，每一轮都会运行n次，优化后只运行2次
+  // 这里优化之后，ctx.fillStyle几乎不再消耗性能
+  // Alive cells.
+  // ctx.fillStyle = ALIVE_COLOR;
+  // for (let row = 0; row < height; row++) {
+  //   for (let col = 0; col < width; col++) {
+  //     const idx = getIndex(row, col);
+  //     if (cells[idx] !== wasm.Cell.Alive) {
+  //       continue;
+  //     }
+
+  //     ctx.fillRect(
+  //       col * (CELL_SIZE + 1) + 1,
+  //       row * (CELL_SIZE + 1) + 1,
+  //       CELL_SIZE,
+  //       CELL_SIZE
+  //     );
+  //   }
+  // }
+
+
+  // ctx.fillStyle = DEAD_COLOR;
+  // for (let row = 0; row < height; row ++) {
+  //   for (let col = 0; col < height; col ++) {
+  //     const idx = getIndex(row, col);
+  //     // console.log(row, col, idx, bitIsSet(idx, cells));
+  //     // ctx.fillStyle = cells[idx] === wasm.Cell.Alive ? ALIVE_COLOR : DEAD_COLOR;
+  //     // ctx.fillStyle = bitIsSet(idx, cells) === true ? ALIVE_COLOR : DEAD_COLOR;
+  //     if (cells[idx] !== wasm.Cell.Dead) {
+  //       continue;
+  //     }
+  //     ctx.fillRect(
+  //         col * (CELL_SIZE + 1)+1,
+  //         row * (CELL_SIZE + 1)+1,
+  //         CELL_SIZE,
+  //         CELL_SIZE);
+  //   }
+  // }
 
   ctx.stroke();
 };
